@@ -3,6 +3,7 @@ pub mod error;
 pub mod events;
 pub mod instructions;
 pub mod state;
+pub mod utils;
 
 use anchor_lang::prelude::*;
 
@@ -11,6 +12,7 @@ pub use error::*;
 pub use events::*;
 pub use instructions::*;
 pub use state::*;
+pub use utils::*;
 
 declare_id!("2UsVYuZY3pEWhWZceW7rH9gyDwLmzYXMuw3exduuAYmn");
 
@@ -47,11 +49,12 @@ pub mod investor_fee_distributor {
         instructions::initialize_honorary_position::handler(ctx, vault)
     }
 
-    // TODO: Add crank_distribution instruction
-    // pub fn crank_distribution(
-    //     ctx: Context<CrankDistribution>,
-    //     total_pages: u16,
-    // ) -> Result<()> {
-    //     instructions::crank_distribution::handler(ctx, total_pages)
-    // }
+    /// Permissionless 24-hour distribution crank
+    pub fn crank_distribution(
+        ctx: Context<CrankDistribution>,
+        total_pages: u16,
+        investor_data: Vec<InvestorData>,
+    ) -> Result<()> {
+        instructions::crank_distribution::handler(ctx, total_pages, investor_data)
+    }
 }
