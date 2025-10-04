@@ -14,6 +14,10 @@ pub use instructions::*;
 pub use state::*;
 pub use utils::*;
 
+// Declare external programs for CPI
+declare_program!(dynamic_amm);
+declare_program!(dynamic_vault);
+
 declare_id!("2UsVYuZY3pEWhWZceW7rH9gyDwLmzYXMuw3exduuAYmn");
 
 #[program]
