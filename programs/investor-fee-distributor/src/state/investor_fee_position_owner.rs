@@ -10,10 +10,10 @@ pub struct InvestorFeePositionOwner {
     pub vault: Pubkey,
     /// DAMM v2 pool address
     pub pool: Pubkey,
-    /// Honorary position account
-    pub position: Pubkey,
-    /// Position NFT mint
-    pub position_nft_mint: Pubkey,
+    /// Lock escrow (honorary position in DAMM v2)
+    pub lock_escrow: Pubkey,
+    /// LP mint of the pool
+    pub lp_mint: Pubkey,
     /// Quote mint (Token B in DAMM v2)
     pub quote_mint: Pubkey,
     /// Base mint (Token A in DAMM v2)
@@ -33,8 +33,8 @@ impl InvestorFeePositionOwner {
         1 +     // bump
         32 +    // vault
         32 +    // pool
-        32 +    // position
-        32 +    // position_nft_mint
+        32 +    // lock_escrow
+        32 +    // lp_mint
         32 +    // quote_mint
         32 +    // base_mint
         8 +     // created_at

@@ -53,12 +53,23 @@ pub mod investor_fee_distributor {
         instructions::initialize_honorary_position::handler(ctx, vault)
     }
 
-    /// Permissionless 24-hour distribution crank
+    /// Permissionless 24-hour distribution crank (manual fee transfer version)
+    /// Use this when fees are manually transferred to treasury
     pub fn crank_distribution(
         ctx: Context<CrankDistribution>,
         total_pages: u16,
         investor_data: Vec<InvestorData>,
     ) -> Result<()> {
         instructions::crank_distribution::handler(ctx, total_pages, investor_data)
+    }
+
+    /// Permissionless 24-hour distribution crank (full CPI version)
+    /// Use this when automatically claiming fees from lock escrow via CPI
+    pub fn crank_distribution_full(
+        ctx: Context<CrankDistributionFull>,
+        total_pages: u16,
+        investor_data: Vec<InvestorData>,
+    ) -> Result<()> {
+        instructions::crank_distribution_full::handler_full(ctx, total_pages, investor_data)
     }
 }
