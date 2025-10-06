@@ -73,8 +73,8 @@ pub struct CrankDistribution<'info> {
     // Pattern: [stream_0, stream_1, ..., stream_n, ata_0, ata_1, ..., ata_n]
 }
 
-pub fn handler(
-    ctx: Context<CrankDistribution>,
+pub fn handler<'info>(
+    ctx: Context<'_, '_, '_, 'info, CrankDistribution<'info>>,
     total_pages: u16,
     investor_data: Vec<InvestorData>,
 ) -> Result<()> {
@@ -156,20 +156,16 @@ pub fn handler(
 
     // ===== STEP 4: CALCULATE LOCKED AMOUNTS FROM STREAMFLOW =====
 
-    let remaining_accounts = ctx.remaining_accounts;
     let num_investors = investor_data.len();
 
     // Remaining accounts split: first half are stream accounts, second half are ATAs
     require!(
-        remaining_accounts.len() == num_investors * 2,
+        ctx.remaining_accounts.len() == num_investors * 2,
         ErrorCode::InvalidInvestorPage
     );
 
-    let stream_accounts = &remaining_accounts[0..num_investors];
-    let investor_atas = &remaining_accounts[num_investors..];
-
     // Calculate total locked across all investors
-    let locked_total = calculate_total_locked(stream_accounts, current_time)?;
+    let locked_total = calculate_total_locked(&ctx.remaining_accounts[0..num_investors], current_time)?;
 
     // If nothing is locked, all fees go to creator
     if locked_total == 0 {
@@ -208,9 +204,13 @@ pub fn handler(
         let mut total_distributed_this_page = 0u64;
         let mut dust_accumulator = progress.carry_over_lamports;
 
-        for (i, investor) in investor_data.iter().enumerate() {
+        for (i, _investor) in investor_data.iter().enumerate() {
+            // Get references to stream and investor ATA upfront
+            let stream_account = &ctx.remaining_accounts[i];
+            let investor_ata_account = &ctx.remaining_accounts[num_investors + i];
+
             // Parse locked amount for this investor
-            let stream = parse_streamflow_stream(&stream_accounts[i])?;
+            let stream = parse_streamflow_stream(stream_account)?;
             let locked_i = stream.calculate_locked_at_timestamp(current_time)?;
 
             // Calculate pro-rata payout
@@ -229,19 +229,18 @@ pub fn handler(
                 ];
                 let signer_seeds = &[&seeds[..]];
 
-                let cpi_accounts = Transfer {
-                    from: ctx.accounts.treasury_quote_ata.to_account_info(),
-                    to: investor_atas[i].to_account_info(),
-                    authority: position_owner.to_account_info(),
-                };
-
-                let cpi_ctx = CpiContext::new_with_signer(
-                    ctx.accounts.token_program.to_account_info(),
-                    cpi_accounts,
-                    signer_seeds,
-                );
-
-                token::transfer(cpi_ctx, payout)?;
+                token::transfer(
+                    CpiContext::new_with_signer(
+                        ctx.accounts.token_program.to_account_info(),
+                        Transfer {
+                            from: ctx.accounts.treasury_quote_ata.to_account_info(),
+                            to: investor_ata_account.clone(),
+                            authority: position_owner.to_account_info(),
+                        },
+                        signer_seeds,
+                    ),
+                    payout,
+                )?;
 
                 total_distributed_this_page = total_distributed_this_page
                     .checked_add(payout)

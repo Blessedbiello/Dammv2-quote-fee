@@ -2,7 +2,6 @@ use anchor_lang::prelude::*;
 
 /// Tracks progress of fee distribution within a 24-hour window
 #[account]
-#[derive(Default)]
 pub struct DailyProgress {
     /// Bump seed for PDA derivation
     pub bump: u8,

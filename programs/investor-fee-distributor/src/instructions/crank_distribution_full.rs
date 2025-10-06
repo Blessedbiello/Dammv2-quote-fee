@@ -1,14 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 use crate::{constants::*, error::ErrorCode, events::*, state::*, utils::*, dynamic_amm};
-
-#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
-pub struct InvestorData {
-    /// Index in the investor list (for ordering)
-    pub index: u32,
-    /// Investor's quote token ATA
-    pub quote_ata: Pubkey,
-}
+use super::crank_distribution::InvestorData;
 
 #[derive(Accounts)]
 #[instruction(total_pages: u16)]
@@ -135,8 +128,8 @@ pub struct CrankDistributionFull<'info> {
     // Pattern: [stream_0, stream_1, ..., stream_n, ata_0, ata_1, ..., ata_n]
 }
 
-pub fn handler_full(
-    ctx: Context<CrankDistributionFull>,
+pub fn handler_full<'info>(
+    ctx: Context<'_, '_, '_, 'info, CrankDistributionFull<'info>>,
     total_pages: u16,
     investor_data: Vec<InvestorData>,
 ) -> Result<()> {
@@ -249,18 +242,14 @@ pub fn handler_full(
 
     // ===== STEP 4: CALCULATE LOCKED AMOUNTS FROM STREAMFLOW =====
 
-    let remaining_accounts = ctx.remaining_accounts;
     let num_investors = investor_data.len();
 
     require!(
-        remaining_accounts.len() == num_investors * 2,
+        ctx.remaining_accounts.len() == num_investors * 2,
         ErrorCode::InvalidInvestorPage
     );
 
-    let stream_accounts = &remaining_accounts[0..num_investors];
-    let investor_atas = &remaining_accounts[num_investors..];
-
-    let locked_total = calculate_total_locked(stream_accounts, current_time)?;
+    let locked_total = calculate_total_locked(&ctx.remaining_accounts[0..num_investors], current_time)?;
 
     if locked_total == 0 {
         msg!("No tokens locked - all fees will go to creator");
@@ -293,8 +282,12 @@ pub fn handler_full(
         let mut total_distributed_this_page = 0u64;
         let mut dust_accumulator = progress.carry_over_lamports;
 
-        for (i, investor) in investor_data.iter().enumerate() {
-            let stream = parse_streamflow_stream(&stream_accounts[i])?;
+        for (i, _investor) in investor_data.iter().enumerate() {
+            // Get references to stream and investor ATA upfront
+            let stream_account = &ctx.remaining_accounts[i];
+            let investor_ata_account = &ctx.remaining_accounts[num_investors + i];
+
+            let stream = parse_streamflow_stream(stream_account)?;
             let locked_i = stream.calculate_locked_at_timestamp(current_time)?;
 
             let payout = calculate_pro_rata_share(
@@ -304,6 +297,8 @@ pub fn handler_full(
             )?;
 
             if payout >= policy.min_payout_lamports {
+                // Transfer quote tokens to investor
+
                 let seeds = &[
                     INVESTOR_FEE_POS_OWNER_SEED,
                     position_owner.vault.as_ref(),
@@ -311,19 +306,18 @@ pub fn handler_full(
                 ];
                 let signer_seeds = &[&seeds[..]];
 
-                let cpi_accounts = Transfer {
-                    from: ctx.accounts.treasury_quote_ata.to_account_info(),
-                    to: investor_atas[i].to_account_info(),
-                    authority: position_owner.to_account_info(),
-                };
-
-                let cpi_ctx = CpiContext::new_with_signer(
-                    ctx.accounts.token_program.to_account_info(),
-                    cpi_accounts,
-                    signer_seeds,
-                );
-
-                token::transfer(cpi_ctx, payout)?;
+                token::transfer(
+                    CpiContext::new_with_signer(
+                        ctx.accounts.token_program.to_account_info(),
+                        Transfer {
+                            from: ctx.accounts.treasury_quote_ata.to_account_info(),
+                            to: investor_ata_account.clone(),
+                            authority: position_owner.to_account_info(),
+                        },
+                        signer_seeds,
+                    ),
+                    payout,
+                )?;
 
                 total_distributed_this_page = total_distributed_this_page
                     .checked_add(payout)

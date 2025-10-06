@@ -2,7 +2,6 @@ use anchor_lang::prelude::*;
 
 /// Configuration for fee distribution policy
 #[account]
-#[derive(Default)]
 pub struct PolicyConfig {
     /// Bump seed for PDA derivation
     pub bump: u8,

@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
-use crate::{constants::*, error::ErrorCode, events::*, state::*, dynamic_amm};
+use crate::{constants::*, events::*, state::*, dynamic_amm};
 
 #[derive(Accounts)]
 #[instruction(vault: Pubkey)]

@@ -2,7 +2,6 @@ use anchor_lang::prelude::*;
 
 /// PDA that owns the honorary DAMM v2 position for fee collection
 #[account]
-#[derive(Default)]
 pub struct InvestorFeePositionOwner {
     /// Bump seed for PDA derivation
     pub bump: u8,

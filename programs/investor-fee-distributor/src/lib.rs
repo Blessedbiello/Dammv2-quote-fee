@@ -8,7 +8,6 @@ pub mod utils;
 use anchor_lang::prelude::*;
 
 pub use constants::*;
-pub use error::*;
 pub use events::*;
 pub use instructions::*;
 pub use state::*;
@@ -55,8 +54,8 @@ pub mod investor_fee_distributor {
 
     /// Permissionless 24-hour distribution crank (manual fee transfer version)
     /// Use this when fees are manually transferred to treasury
-    pub fn crank_distribution(
-        ctx: Context<CrankDistribution>,
+    pub fn crank_distribution<'info>(
+        ctx: Context<'_, '_, '_, 'info, CrankDistribution<'info>>,
         total_pages: u16,
         investor_data: Vec<InvestorData>,
     ) -> Result<()> {
@@ -65,8 +64,8 @@ pub mod investor_fee_distributor {
 
     /// Permissionless 24-hour distribution crank (full CPI version)
     /// Use this when automatically claiming fees from lock escrow via CPI
-    pub fn crank_distribution_full(
-        ctx: Context<CrankDistributionFull>,
+    pub fn crank_distribution_full<'info>(
+        ctx: Context<'_, '_, '_, 'info, CrankDistributionFull<'info>>,
         total_pages: u16,
         investor_data: Vec<InvestorData>,
     ) -> Result<()> {
