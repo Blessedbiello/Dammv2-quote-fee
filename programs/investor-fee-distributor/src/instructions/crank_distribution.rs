@@ -130,12 +130,11 @@ pub fn handler(
     // ===== STEP 2: CLAIM FEES (First page only) =====
 
     if progress.current_page == 0 {
-        // TODO: CPI to cp-amm to claim position fees
-        // For now, we'll use the current treasury balance as the claimable amount
-        // In production, this should call cp_amm::cpi::claim_position_fee()
+        // MANUAL VERSION: Fees must be manually transferred to treasury_quote_ata
+        // before calling this instruction. This version does not perform CPI to claim fees.
+        // For automatic fee claiming via CPI, use crank_distribution_full instead.
 
-        msg!("TODO: CPI to cp-amm claim_position_fee not yet implemented");
-        msg!("Using treasury balance as fees claimed");
+        msg!("Manual crank version - using pre-transferred treasury balance");
 
         let quote_fees = ctx.accounts.treasury_quote_ata.amount;
 
@@ -145,7 +144,7 @@ pub fn handler(
         emit!(QuoteFeesClaimed {
             day_id,
             amount_claimed: quote_fees,
-            position: position_owner.position,
+            position: position_owner.lock_escrow,
             timestamp: current_time,
         });
     }
