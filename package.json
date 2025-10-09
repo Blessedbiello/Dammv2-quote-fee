@@ -1,8 +1,15 @@
 {
-  "license": "ISC",  
+  "license": "ISC",
   "scripts": {
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
-    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
+    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
+    "test": "anchor test",
+    "test:unit": "cargo test --manifest-path programs/investor-fee-distributor/Cargo.toml",
+    "test:integration": "ts-mocha -p ./tsconfig.json -t 1000000 'tests/**/*.test.ts'",
+    "test:policy": "ts-mocha -p ./tsconfig.json -t 1000000 tests/initialize-policy.test.ts",
+    "test:crank": "ts-mocha -p ./tsconfig.json -t 1000000 tests/crank-distribution.test.ts",
+    "test:edge": "ts-mocha -p ./tsconfig.json -t 1000000 tests/edge-cases.test.ts",
+    "test:e2e": "ts-mocha -p ./tsconfig.json -t 1000000 tests/integration.test.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.30.1"

@@ -143,6 +143,17 @@ impl StreamflowStream {
 
 /// Parse a Streamflow stream account from account info
 pub fn parse_streamflow_stream(account_info: &AccountInfo) -> Result<StreamflowStream> {
+    // SECURITY: Validate account owner to prevent fake stream accounts
+    // The account must be owned by the Streamflow program
+    let streamflow_program_id = "strmRqUCoQUgGUan5YhzUZa6KqdzwX5L6FpUxfmKg5m"
+        .parse::<Pubkey>()
+        .unwrap();
+
+    require!(
+        account_info.owner == &streamflow_program_id,
+        ErrorCode::StreamflowAccountMismatch
+    );
+
     let data = account_info.try_borrow_data()?;
 
     // Minimum size check (basic validation)

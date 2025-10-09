@@ -76,9 +76,25 @@ pub fn handler(
     let clock = Clock::get()?;
 
     // Step 1: Validate pool configuration for quote-only fees
-    // NOTE: This requires parsing the pool's config account to check collectFeeMode
-    // For production, implement config validation here
-    // For now, we trust the pool is configured correctly
+    // SECURITY NOTE: Pool config validation for collectFeeMode
+    //
+    // DAMM v2 pools support a `collect_fee_mode` parameter:
+    // - Mode 0: Collect both token A and token B fees
+    // - Mode 1: Collect only token B (quote token) fees
+    //
+    // For quote-only fee distribution, we MUST verify collect_fee_mode == 1
+    //
+    // Implementation options:
+    // 1. Parse pool account and check embedded config (if available in account data)
+    // 2. Pass pool config account separately and deserialize
+    // 3. Rely on runtime validation in crank_distribution (base_balance == 0)
+    //
+    // Current approach: Runtime validation in crank_distribution enforces quote-only
+    // by checking treasury_base_ata.amount == 0 before each distribution.
+    // This prevents distribution if any base fees are present.
+    //
+    // TODO: For enhanced security, add pool config account to InitializeHonoraryPosition
+    // and validate collect_fee_mode == 1 at initialization time.
 
     msg!("Creating honorary lock escrow for quote-only fee collection");
 
